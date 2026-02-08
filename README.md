@@ -1,128 +1,233 @@
-# 🤖 Agent AI for Free  
-Run Ollama on Google Colab, expose it with ngrok, and use it like an AI agent at **$0 cost**
+# 🤖 AI Free Agent - Run Claude with Ollama on Google Colab (100% Free!)
 
-> ⚠️ READ THIS FIRST
-- **Never hardcode secrets** (ngrok tokens, API keys) in public repos.
-- Ollama runs **open-source models locally** → no Anthropic / OpenAI billing.
-- Google Colab and ngrok may have **usage limits** depending on your plan.
-- Claude CLI is designed for Anthropic APIs, so we use a **proxy approach** to make it work with Ollama.
+> **Run powerful AI models like Claude completely free using Google Colab and Ollama!**
+
+## 🌟 Why This Is Awesome
+
+- ✅ **Completely FREE** - No API costs, no subscriptions
+- 🚀 **Powerful Models** - Run advanced models like `gpt-oss:20b` and `qwen2.5-coder:3b`
+- ☁️ **Cloud-Based** - Uses Google Colab's free GPU resources
+- 🔧 **Easy Setup** - Just follow the steps below!
 
 ---
 
-## 1️⃣ Open Google Colab
+## 📋 Prerequisites
+
+Before you start, you'll need:
+1. A Google account (for Google Colab)
+2. An Ngrok account (free) - [Sign up here](https://ngrok.com/)
+
+---
+
+## 🔑 Step 1: Get Your Ngrok Auth Token
+
+1. Go to [https://ngrok.com/](https://ngrok.com/) and sign up for a free account
+2. After logging in, go to [https://dashboard.ngrok.com/get-started/your-authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
+3. Copy your authtoken - it should look like: `2abc123XYZ_yourTokenHere`
+4. Keep this token handy - you'll need it in the next step!
+
+---
+
+## 🚀 Step 2: Open Google Colab
+
+1. Go to [Google Colab](https://colab.research.google.com/)
+2. Click **"New Notebook"** to create a fresh notebook
+3. You're ready to start!
+
+---
+
+## ⚙️ Step 3: Run the Setup Script
+
+Copy and paste the following code into a code cell in your Colab notebook, **replacing `YOUR_NGROK_TOKEN_HERE` with your actual ngrok authtoken**:
 
 ```bash
-# 1. Go to https://colab.research.google.com
-# 2. Click "New Notebook"
-# 3. (Optional) Runtime → Change runtime type → GPU
-2️⃣ Install Ollama + ngrok (NO API KEY INSIDE)
-Run this entire block in ONE Colab cell:
+%%bash
+# Update system and install dependencies
+apt-get update && apt-get install -y zstd
 
-apt-get update && apt-get install -y zstd curl python3
-
-# -------------------------
 # Install ngrok
-# -------------------------
-curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
-  | tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
-
-echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
-  | tee /etc/apt/sources.list.d/ngrok.list
-
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc | tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null
+echo "deb https://ngrok-agent.s3.amazonaws.com buster main" | tee /etc/apt/sources.list.d/ngrok.list
 apt-get update && apt-get install -y ngrok
 
-# -------------------------
 # Install Ollama
-# -------------------------
 curl -fsSL https://ollama.com/install.sh | sh
-3️⃣ Get your ngrok authtoken (DO THIS MANUALLY)
-# 1. Create / login to ngrok
-# 2. Go to Dashboard → Your Authtoken
-# 3. Copy it
-# 4. Paste it below (DO NOT COMMIT THIS)
-ngrok config add-authtoken "<PASTE_YOUR_NGROK_AUTHTOKEN_HERE>"
-4️⃣ Start Ollama server
-export OLLAMA_HOST=0.0.0.0
 
+# Configure ngrok with YOUR token
+ngrok config add-authtoken YOUR_NGROK_TOKEN_HERE
+
+# Start Ollama server
+export OLLAMA_HOST=0.0.0.0
 nohup ollama serve > ollama.log 2>&1 &
 sleep 5
-5️⃣ Download a model
-⚠️ Big models may crash Colab. Start small if needed.
 
-# Small & fast
+# Download AI model (choose one or both)
+echo "📥 Downloading AI model..."
+# Option 1: Lightweight coding model (faster)
 # ollama pull qwen2.5-coder:3b
 
-# Bigger & stronger (needs more RAM)
+# Option 2: More powerful general model (recommended)
 ollama pull gpt-oss:20b
-6️⃣ Expose Ollama with ngrok
+
+# Start ngrok tunnel
 nohup ngrok http 11434 --host-header="localhost:11434" > ngrok.log 2>&1 &
 sleep 8
-echo "---------------------------------------------"
-echo "✅ OLLAMA SERVER IS LIVE"
-echo "PUBLIC URL:"
-curl -s http://localhost:4040/api/tunnels \
-  | python3 -c "import json,sys; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"
-echo "---------------------------------------------"
-7️⃣ Test Ollama locally (inside Colab)
-curl http://localhost:11434/api/tags
-8️⃣ (OPTIONAL) Make Claude CLI work with Ollama (FREE)
-Claude CLI expects an Anthropic-style API, so we use LiteLLM as a proxy.
 
-Install LiteLLM
-pip -q install litellm
-Run LiteLLM proxy (Anthropic-compatible)
-nohup litellm \
-  --host 0.0.0.0 \
-  --port 4000 \
-  --model ollama/gpt-oss:20b \
-  --api_base http://localhost:11434 \
-  > litellm.log 2>&1 &
+# Display the public URL
+echo "---------------------------------------------------"
+echo "✅ SERVER IS LIVE!"
+echo ""
+echo "🌐 OLLAMA PUBLIC URL:"
+curl -s http://localhost:4040/api/tunnels | python3 -c "import sys, json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])"
+echo ""
+echo "---------------------------------------------------"
+echo "📋 Copy the URL above - you'll need it in the next step!"
+```
 
-sleep 5
-9️⃣ Expose LiteLLM with ngrok
-nohup ngrok http 4000 --host-header="localhost:4000" > ngrok_litellm.log 2>&1 &
-sleep 8
-echo "LITELLM PUBLIC URL:"
-curl -s http://localhost:4040/api/tunnels \
-  | python3 -c "import json,sys; print([t['public_url'] for t in json.load(sys.stdin)['tunnels']])"
-➡️ Copy the URL that points to port 4000
+**Important:** Make sure to replace `YOUR_NGROK_TOKEN_HERE` with your actual token!
 
-🔟 Configure Claude CLI environment variables
-⚠️ This does NOT give real Anthropic Claude access.
-It routes Claude CLI requests to your Ollama model.
+Click the **Run** button (▶️) and wait for the script to complete. This will take 5-10 minutes.
 
+---
+
+## 🔗 Step 4: Get Your Public URL
+
+After the script finishes, you'll see output like:
+
+```
+---------------------------------------------------
+✅ SERVER IS LIVE!
+
+🌐 OLLAMA PUBLIC URL:
+https://abc123-xyz-456.ngrok-free.app
+
+---------------------------------------------------
+```
+
+**Copy this URL!** You'll need it for the next step.
+
+---
+
+## 🎯 Step 5: Configure Claude CLI
+
+Now install and configure the Claude CLI on your local machine (or in a new Colab cell):
+
+### Option A: Install Claude CLI (if not installed)
+
+```bash
+# Install Claude CLI
+pip install claude-cli
+```
+
+### Option B: Configure Environment Variables
+
+Run these commands in your terminal, **replacing `YOUR_URL_HERE` with the ngrok URL from Step 4**:
+
+```bash
 export ANTHROPIC_AUTH_TOKEN=ollama
-export ANTHROPIC_API_KEY="DUMMY_KEY"
-export ANTHROPIC_BASE_URL="https://PASTE_LITELLM_NGROK_URL_HERE"
-1️⃣1️⃣ Run Claude CLI (FREE)
+export ANTHROPIC_API_KEY=""
+export ANTHROPIC_BASE_URL=YOUR_URL_HERE
+```
+
+**Example:**
+```bash
+export ANTHROPIC_AUTH_TOKEN=ollama
+export ANTHROPIC_API_KEY=""
+export ANTHROPIC_BASE_URL=https://abc123-xyz-456.ngrok-free.app
+```
+
+---
+
+## 🎉 Step 6: Run Claude!
+
+Now you can start using Claude with Ollama:
+
+```bash
 claude --model gpt-oss:20b
-🎉 You now have an AI Agent running for free, powered by:
+```
 
-Google Colab
+That's it! You now have a **free AI agent** running on powerful models! 🎊
 
-Ollama
+---
 
-ngrok
+## 💡 Available Models
 
-Claude CLI (proxy mode)
+You can use different models based on your needs:
 
-⭐ Tips to make this repo popular
-# Add a Colab badge
-# Add troubleshooting section
-# Add security warnings (do NOT expose secrets)
-# Add example curl / Python requests
-# Recommend models by RAM/GPU
-🛠 Troubleshooting
-# ngrok issues
-tail -n 50 ngrok.log
+| Model | Size | Best For | Pull Command |
+|-------|------|----------|--------------|
+| `gpt-oss:20b` | 20B params | General tasks, conversations | `ollama pull gpt-oss:20b` |
+| `qwen2.5-coder:3b` | 3B params | Coding, lightweight tasks | `ollama pull qwen2.5-coder:3b` |
 
-# Ollama issues
-tail -n 50 ollama.log
+To switch models, just change the `--model` parameter:
+```bash
+claude --model qwen2.5-coder:3b
+```
 
-# LiteLLM issues
-tail -n 50 litellm.log
-📜 Disclaimer
-# You are responsible for exposed endpoints.
-# Do not leak tokens.
-# Respect Colab & ngrok ToS.
-🔥 Agent AI for Free — no subscriptions, no API bills, just compute.
+---
+
+## 🛠️ Troubleshooting
+
+### Issue: "Connection refused" error
+**Solution:** Make sure the Colab notebook is still running and the ngrok URL hasn't expired.
+
+### Issue: "Model not found"
+**Solution:** Wait for the model download to complete in Step 3, or manually pull it:
+```bash
+ollama pull gpt-oss:20b
+```
+
+### Issue: Ngrok URL stopped working
+**Solution:** Ngrok free tier URLs expire after some time. Just restart the setup script to get a new URL.
+
+### Issue: Colab disconnected
+**Solution:** Google Colab free tier disconnects after ~12 hours of inactivity. Simply run the setup script again.
+
+---
+
+## ⚡ Pro Tips
+
+1. **Keep Colab Active:** Interact with your Colab notebook occasionally to prevent disconnection
+2. **Save Your Work:** Colab sessions are temporary - save important conversations locally
+3. **Use GPU Runtime:** For faster model loading, change Colab runtime to GPU (Runtime → Change runtime type → GPU)
+4. **Bookmark Your URL:** Save your ngrok URL somewhere handy while working
+
+---
+
+## 🤝 Contributing
+
+Found this helpful? Give it a ⭐ and share it with others!
+
+Want to improve this guide? Pull requests are welcome!
+
+---
+
+## ⚠️ Disclaimer
+
+This setup uses:
+- Google Colab's free tier (subject to their terms of service)
+- Ngrok's free tier (subject to their terms of service)
+- Ollama (open source)
+
+Make sure you comply with all respective terms of service.
+
+---
+
+## 📚 Additional Resources
+
+- [Ollama Documentation](https://ollama.com/)
+- [Ngrok Documentation](https://ngrok.com/docs)
+- [Google Colab Guide](https://colab.research.google.com/)
+- [Claude CLI Documentation](https://github.com/anthropics/claude-cli)
+
+---
+
+## 🌟 Star This Repo!
+
+If this helped you run AI models for free, please give this repo a star! ⭐
+
+**Happy AI coding! 🚀**
+
+---
+
+*Made with ❤️ for the AI community*
